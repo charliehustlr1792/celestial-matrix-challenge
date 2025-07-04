@@ -13,3 +13,57 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model User {
+  id         String      @id @default(uuid())
+  email      String      @unique
+  username   String
+  password   String
+  comments   Comment[]   @relation("UserComments")
+  notifications Notification[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+}
+
+model Comment {
+  id          String      @id @default(uuid())
+  content     String
+  user        User        @relation("UserComments", fields: [userId], references: [id])
+  userId      String
+
+  parent      Comment?    @relation("CommentReplies", fields: [parentId], references: [id])
+  parentId    String?     
+
+  children    Comment[]   @relation("CommentReplies")
+  notifications Notification[]
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  editedAt    DateTime?   
+  deletedAt   DateTime?   
+  isDeleted   Boolean     @default(false)
+
+  @@index([userId])
+  @@index([parentId])
+}
+
+model Notification {
+  id          String    @id @default(uuid())
+  user        User      @relation(fields: [userId], references: [id])
+  userId      String
+
+  comment     Comment   @relation(fields: [commentId], references: [id])
+  commentId   String
+
+  type        NotificationType
+  isRead      Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  @@index([userId])
+  @@index([commentId])
+}
+
+enum NotificationType {
+  REPLY
+  MENTION
+}
